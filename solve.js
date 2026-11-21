@@ -20,7 +20,8 @@ export function run(input) {
   while (pos < end) {
     const recordLine = line;
     const row = header && columns === null ? null : rows.length;
-    const fields = [];
+    const fields = width < 0 ? [] : new Array(width);
+    let fieldCount = 0;
     let quoted;
 
     while (true) {
@@ -58,7 +59,7 @@ export function run(input) {
       value += text.slice(pos, boundary);
       pos = boundary;
       if (closed && value.length > beforeSuffix) errors.push({code: 'quote_junk', line: recordLine, row});
-      fields.push(value);
+      fields[fieldCount++] = value;
       if (text.charCodeAt(pos) === 44) {
         pos++;
         continue;
@@ -69,15 +70,15 @@ export function run(input) {
       }
       break;
     }
-    if (fields.length === 1 && fields[0] === '' && !quoted) continue;
+    if (fieldCount === 1 && fields[0] === '' && !quoted) continue;
     if (width < 0) width = fields.length;
     if (header && columns === null) {
       columns = fields;
       continue;
     }
-    if (fields.length < width) {
-      errors.push({code: 'short_row', line: recordLine, row, fields: fields.length});
-      while (fields.length < width) fields.push('');
+    if (fieldCount < width) {
+      errors.push({code: 'short_row', line: recordLine, row, fields: fieldCount});
+      fields.fill('', fieldCount, width);
     } else if (fields.length > width) {
       errors.push({code: 'long_row', line: recordLine, row, extra: fields.splice(width)});
     }
