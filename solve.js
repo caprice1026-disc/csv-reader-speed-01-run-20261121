@@ -48,6 +48,11 @@ export function run(input) {
       if (comma < pos) comma = next(',', pos);
       if (cr < pos) cr = next('\r', pos);
       if (lf < pos) lf = next('\n', pos);
+      if (!quoted && comma < cr && comma < lf) {
+        fields[fieldCount++] = text.slice(pos, comma);
+        pos = comma + 1;
+        continue;
+      }
       const stop = Math.min(comma, lf);
       while (cr < stop && text.charCodeAt(cr + 1) !== 10) {
         value += text.slice(pos, cr);
