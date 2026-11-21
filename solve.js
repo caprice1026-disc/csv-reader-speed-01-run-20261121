@@ -48,7 +48,7 @@ export function run(input) {
       if (cr < pos) cr = next('\r', pos);
       if (lf < pos) lf = next('\n', pos);
       const stop = Math.min(comma, lf);
-      while (cr < stop && cr + 1 !== lf) {
+      while (cr < stop && text.charCodeAt(cr + 1) !== 10) {
         value += text.slice(pos, cr);
         errors.push({code: 'stray_cr', line: recordLine, row});
         pos = cr + 1;
