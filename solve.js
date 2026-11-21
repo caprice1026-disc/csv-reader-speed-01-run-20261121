@@ -9,6 +9,13 @@ export function run(input) {
   let line = 1;
   let pos = text.charCodeAt(0) === 0xfeff ? 1 : 0;
   const end = text.length;
+  let comma = -1;
+  let cr = -1;
+  let lf = -1;
+  function next(delimiter, from) {
+    const index = text.indexOf(delimiter, from);
+    return index < 0 ? end : index;
+  }
 
   while (pos < end) {
     const recordLine = line;
@@ -37,19 +44,19 @@ export function run(input) {
       }
 
       const beforeSuffix = value.length;
-      let start = pos;
-      while (pos < end) {
-        const code = text.charCodeAt(pos);
-        if (code === 44 || code === 10) break;
-        if (code === 13) {
-          if (text.charCodeAt(pos + 1) === 10) break;
-          value += text.slice(start, pos);
-          errors.push({code: 'stray_cr', line: recordLine, row});
-          start = pos + 1;
-        }
-        pos++;
+      if (comma < pos) comma = next(',', pos);
+      if (cr < pos) cr = next('\r', pos);
+      if (lf < pos) lf = next('\n', pos);
+      const stop = Math.min(comma, lf);
+      while (cr < stop && cr + 1 !== lf) {
+        value += text.slice(pos, cr);
+        errors.push({code: 'stray_cr', line: recordLine, row});
+        pos = cr + 1;
+        cr = next('\r', pos);
       }
-      value += text.slice(start, pos);
+      const boundary = Math.min(cr, stop);
+      value += text.slice(pos, boundary);
+      pos = boundary;
       if (closed && value.length > beforeSuffix) errors.push({code: 'quote_junk', line: recordLine, row});
       fields.push(value);
       if (text.charCodeAt(pos) === 44) {
