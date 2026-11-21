@@ -40,6 +40,22 @@ export function run(input) {
           value = text.slice(open + 1, quote).replace(/""/g, '"').replace(/\r\n?/g, '\n');
           for (let lf = value.indexOf('\n'); lf >= 0; lf = value.indexOf('\n', lf + 1)) line++;
           pos = quote + 1;
+          // A delimiter immediately after the closing quote leaves no suffix to recover.
+          const delimiter = text.charCodeAt(pos);
+          if (delimiter === 44) {
+            fields[fieldCount++] = value;
+            pos++;
+            continue;
+          }
+          if (pos === end || delimiter === 10 ||
+              (delimiter === 13 && text.charCodeAt(pos + 1) === 10)) {
+            fields[fieldCount++] = value;
+            if (pos < end) {
+              pos += delimiter === 13 ? 2 : 1;
+              line++;
+            }
+            break;
+          }
           closed = true;
         }
       }
