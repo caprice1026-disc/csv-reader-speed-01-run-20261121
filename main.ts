@@ -1,9 +1,7 @@
-// csv-reader 1.0.0, the house entry, make.fun's own reference program: the harness runs `node /bot/main.ts` (node22). It reads every case from /input/cases.json (a JSON
-// array of {id, input}), answers each one alone with run() from solve.js, and writes /output/answers.json: a JSON
-// array of the answers, one per case and in the cases' order. An entry keeps this driver and replaces solve.js with a
-// faster module whose run(input) returns the same answer for every input. Outside a container MAKEFUN_INPUT_DIR and MAKEFUN_OUTPUT_DIR stand in for /input and /output.
+// Adapted from make.fun's MIT-licensed csv-reader driver for Node 22.
+// Serialize each case before parsing the next so its rows can be reclaimed.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { closeSync, openSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { setFlagsFromString } from 'node:v8';
 
@@ -18,6 +16,14 @@ const INPUT_DIR = process.env.MAKEFUN_INPUT_DIR ?? '/input';
 const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
 const cases = JSON.parse(readFileSync(join(INPUT_DIR, 'cases.json'), 'utf8')) as { id: string; input: unknown }[];
-const answers: unknown[] = [];
-for (const c of cases) answers.push(run(c.input));
-writeFileSync(join(OUTPUT_DIR, 'answers.json'), JSON.stringify(answers));
+const output = openSync(join(OUTPUT_DIR, 'answers.json'), 'w');
+try {
+  writeFileSync(output, '[');
+  for (const [index, c] of cases.entries()) {
+    if (index > 0) writeFileSync(output, ',');
+    writeFileSync(output, JSON.stringify(run(c.input)));
+  }
+  writeFileSync(output, ']');
+} finally {
+  closeSync(output);
+}
